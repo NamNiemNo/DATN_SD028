@@ -1,0 +1,231 @@
+@page "/test-hoa-don"
+@rendermode InteractiveServer
+@using System.Net.Http.Json
+@using System.Text.Json
+@inject HttpClient Http
+
+<PageTitle>Test API hóa đơn</PageTitle>
+
+<div class="container-fluid py-3">
+    <h1 class="mb-2">Test API Hóa đơn</h1>
+    <p class="text-muted">Giao diện kiểm thử các endpoint hóa đơn và hóa đơn chi tiết. API base URL: <code>@Http.BaseAddress</code></p>
+
+    @if (!string.IsNullOrWhiteSpace(_message))
+    {
+        <div class="alert @(_isError ? "alert-danger" : "alert-success")" role="alert">@_message</div>
+    }
+
+    <div class="row g-3">
+        <div class="col-12 col-xl-6">
+            <section class="card shadow-sm h-100">
+                <div class="card-header fw-bold">1. Truy vấn hóa đơn</div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <button class="btn btn-primary" @onclick="TaiDanhSachHoaDon">GET danh sách hóa đơn</button>
+                        <button class="btn btn-outline-primary" @onclick="TaiDanhSachChiTiet">GET danh sách chi tiết</button>
+                    </div>
+                    <label class="form-label">Mã hóa đơn (GUID)</label>
+                    <div class="input-group mb-3">
+                        <input class="form-control" @bind="_hoaDonId" placeholder="Nhập HoaDonId" />
+                        <button class="btn btn-outline-primary" @onclick="TaiHoaDonTheoId">GET theo mã</button>
+                        <button class="btn btn-outline-secondary" @onclick="TaiChiTietTheoHoaDon">GET chi tiết hóa đơn</button>
+                    </div>
+                    <label class="form-label">Mã khách hàng (GUID)</label>
+                    <div class="input-group">
+                        <input class="form-control" @bind="_khachHangId" placeholder="Nhập KhachHangId" />
+                        <button class="btn btn-outline-primary" @onclick="TaiHoaDonTheoKhachHang">GET theo khách hàng</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-12 col-xl-6">
+            <section class="card shadow-sm h-100">
+                <div class="card-header fw-bold">2. Tạo hóa đơn từ giỏ hàng</div>
+                <div class="card-body">
+                    <div class="mb-2"><label class="form-label">KhachHangId *</label><input class="form-control" @bind="_cartKhachHangId" placeholder="GUID khách hàng có giỏ hàng" /></div>
+                    <div class="row g-2">
+                        <div class="col-md-6"><label class="form-label">Tên người nhận *</label><input class="form-control" @bind="_cartTen" /></div>
+                        <div class="col-md-6"><label class="form-label">Số điện thoại *</label><input class="form-control" @bind="_cartSdt" /></div>
+                    </div>
+                    <div class="mt-2"><label class="form-label">Địa chỉ *</label><input class="form-control" @bind="_cartDiaChi" /></div>
+                    <div class="row g-2 mt-1">
+                        <div class="col-md-6"><label class="form-label">HinhThucThanhToanId (không bắt buộc)</label><input class="form-control" @bind="_cartThanhToanId" /></div>
+                        <div class="col-md-6"><label class="form-label">VoucherId (không bắt buộc)</label><input class="form-control" @bind="_cartVoucherId" /></div>
+                    </div>
+                    <div class="row g-2 mt-1">
+                        <div class="col-md-4"><label class="form-label">Phí ship</label><input type="number" min="0" step="1000" class="form-control" @bind="_cartPhiShip" /></div>
+                        <div class="col-md-8"><label class="form-label">Ghi chú</label><input class="form-control" @bind="_cartGhiChu" /></div>
+                    </div>
+                    <button class="btn btn-success mt-3" disabled="@_busy" @onclick="TaoHoaDonTuGioHang">POST tạo từ giỏ hàng</button>
+                    <p class="small text-muted mt-2 mb-0">Khách hàng cần có giỏ hàng chứa sản phẩm hợp lệ. API có thể xóa các dòng giỏ hàng và cập nhật tồn kho sau khi tạo thành công.</p>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-12">
+            <section class="card shadow-sm">
+                <div class="card-header fw-bold">3. Tạo hóa đơn thủ công</div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4"><label class="form-label">KhachHangId (có thể để trống)</label><input class="form-control" @bind="_manualKhachHangId" /></div>
+                        <div class="col-md-4"><label class="form-label">NhanVienId (có thể để trống)</label><input class="form-control" @bind="_manualNhanVienId" /></div>
+                        <div class="col-md-4"><label class="form-label">HinhThucThanhToanId (không bắt buộc)</label><input class="form-control" @bind="_manualThanhToanId" /></div>
+                        <div class="col-md-6"><label class="form-label">Tên người nhận *</label><input class="form-control" @bind="_manualTen" /></div>
+                        <div class="col-md-6"><label class="form-label">Số điện thoại *</label><input class="form-control" @bind="_manualSdt" /></div>
+                        <div class="col-md-12"><label class="form-label">Địa chỉ *</label><input class="form-control" @bind="_manualDiaChi" /></div>
+                        <div class="col-md-4"><label class="form-label">VoucherId (không bắt buộc)</label><input class="form-control" @bind="_manualVoucherId" /></div>
+                        <div class="col-md-4"><label class="form-label">Phí ship</label><input type="number" min="0" step="1000" class="form-control" @bind="_manualPhiShip" /></div>
+                        <div class="col-md-4"><label class="form-label">Ghi chú</label><input class="form-control" @bind="_manualGhiChu" /></div>
+                    </div>
+                    <hr />
+                    <h6>Sản phẩm trong hóa đơn (giao diện này nhập một dòng chi tiết)</h6>
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-8"><label class="form-label">GiayChiTietId *</label><input class="form-control" @bind="_manualGiayChiTietId" placeholder="GUID giày chi tiết có tồn kho" /></div>
+                        <div class="col-md-2"><label class="form-label">Số lượng *</label><input type="number" min="1" class="form-control" @bind="_manualSoLuong" /></div>
+                        <div class="col-md-2"><button class="btn btn-success w-100" disabled="@_busy" @onclick="TaoHoaDonThuCong">POST tạo thủ công</button></div>
+                    </div>
+                    <p class="small text-muted mt-2 mb-0">Các GUID phải tồn tại trong database. Có thể nhập nhiều sản phẩm bằng Swagger hoặc mở rộng giao diện này thêm dòng chi tiết.</p>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-12">
+            <section class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="fw-bold">Kết quả API</span>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="XoaKetQua">Xóa kết quả</button>
+                </div>
+                <div class="card-body">
+                    @if (_busy)
+                    {
+                        <div class="text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Đang gửi request...</div>
+                    }
+                    <pre class="api-result mb-0">@(_resultJson ?? "Chưa có kết quả. Chọn một thao tác phía trên để bắt đầu test.")</pre>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+
+<style>
+    .api-result { background: #111827; color: #d1fae5; border-radius: .4rem; padding: 1rem; min-height: 100px; max-height: 520px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .card-header { background: #f8fafc; }
+</style>
+
+@code {
+    private bool _busy;
+    private bool _isError;
+    private string? _message;
+    private string? _resultJson;
+    private string _hoaDonId = "";
+    private string _khachHangId = "";
+
+    private string _cartKhachHangId = "";
+    private string _cartTen = "";
+    private string _cartSdt = "";
+    private string _cartDiaChi = "";
+    private string _cartThanhToanId = "";
+    private string _cartVoucherId = "";
+    private float _cartPhiShip = 0;
+    private string _cartGhiChu = "";
+
+    private string _manualKhachHangId = "";
+    private string _manualNhanVienId = "";
+    private string _manualThanhToanId = "";
+    private string _manualVoucherId = "";
+    private string _manualTen = "";
+    private string _manualSdt = "";
+    private string _manualDiaChi = "";
+    private float _manualPhiShip = 0;
+    private string _manualGhiChu = "";
+    private string _manualGiayChiTietId = "";
+    private int _manualSoLuong = 1;
+
+    private async Task TaiDanhSachHoaDon() => await GetApi("api/HoaDon");
+    private async Task TaiDanhSachChiTiet() => await GetApi("api/HoaDonChiTiet");
+
+    private async Task TaiHoaDonTheoId()
+    {
+        if (!Guid.TryParse(_hoaDonId, out var id)) { BaoLoi("Nhập HoaDonId đúng định dạng GUID."); return; }
+        await GetApi($"api/HoaDon/{id}");
+    }
+
+    private async Task TaiChiTietTheoHoaDon()
+    {
+        if (!Guid.TryParse(_hoaDonId, out var id)) { BaoLoi("Nhập HoaDonId đúng định dạng GUID."); return; }
+        await GetApi($"api/HoaDonChiTiet/hoa-don/{id}");
+    }
+
+    private async Task TaiHoaDonTheoKhachHang()
+    {
+        if (!Guid.TryParse(_khachHangId, out var id)) { BaoLoi("Nhập KhachHangId đúng định dạng GUID."); return; }
+        await GetApi($"api/HoaDon/khach-hang/{id}");
+    }
+
+    private async Task TaoHoaDonTuGioHang()
+    {
+        if (!Guid.TryParse(_cartKhachHangId, out var customerId)) { BaoLoi("Nhập KhachHangId đúng định dạng GUID."); return; }
+        if (string.IsNullOrWhiteSpace(_cartTen) || string.IsNullOrWhiteSpace(_cartSdt) || string.IsNullOrWhiteSpace(_cartDiaChi)) { BaoLoi("Vui lòng nhập tên người nhận, số điện thoại và địa chỉ."); return; }
+        if (!TryOptionalGuid(_cartThanhToanId, out var paymentId) || !TryOptionalGuid(_cartVoucherId, out var voucherId)) { BaoLoi("HinhThucThanhToanId hoặc VoucherId không phải GUID hợp lệ."); return; }
+
+        var payload = new { khachHangId = customerId, tenNguoiNhan = _cartTen, soDienThoai = _cartSdt, diaChi = _cartDiaChi, hinhThucThanhToanId = paymentId, voucherId, phiShip = _cartPhiShip, ghiChu = NullIfEmpty(_cartGhiChu) };
+        await PostApi("api/HoaDon/tao-tu-gio-hang", payload);
+    }
+
+    private async Task TaoHoaDonThuCong()
+    {
+        if (string.IsNullOrWhiteSpace(_manualTen) || string.IsNullOrWhiteSpace(_manualSdt) || string.IsNullOrWhiteSpace(_manualDiaChi)) { BaoLoi("Vui lòng nhập tên người nhận, số điện thoại và địa chỉ."); return; }
+        if (!Guid.TryParse(_manualGiayChiTietId, out var shoeDetailId)) { BaoLoi("Nhập GiayChiTietId đúng định dạng GUID."); return; }
+        if (_manualSoLuong < 1) { BaoLoi("Số lượng phải lớn hơn 0."); return; }
+        if (!TryOptionalGuid(_manualKhachHangId, out var customerId) || !TryOptionalGuid(_manualNhanVienId, out var employeeId) || !TryOptionalGuid(_manualThanhToanId, out var paymentId) || !TryOptionalGuid(_manualVoucherId, out var voucherId)) { BaoLoi("Một trong các GUID tùy chọn không hợp lệ."); return; }
+
+        var payload = new { khachHangId = customerId, nhanVienId = employeeId, tenNguoiNhan = _manualTen, soDienThoai = _manualSdt, diaChi = _manualDiaChi, hinhThucThanhToanId = paymentId, voucherId, phiShip = _manualPhiShip, ghiChu = NullIfEmpty(_manualGhiChu), chiTiet = new[] { new { giayChiTietId = shoeDetailId, soLuongSanPham = _manualSoLuong } } };
+        await PostApi("api/HoaDon/tao-thu-cong", payload);
+    }
+
+    private async Task GetApi(string path) => await SendApi(() => Http.GetAsync(path), path);
+
+    private async Task PostApi<T>(string path, T payload) => await SendApi(() => Http.PostAsJsonAsync(path, payload), path);
+
+    private async Task SendApi(Func<Task<HttpResponseMessage>> send, string path)
+    {
+        if (_busy) return;
+        _busy = true; _message = null; _isError = false;
+        try
+        {
+            using var response = await send();
+            var body = await response.Content.ReadAsStringAsync();
+            _isError = !response.IsSuccessStatusCode;
+            _message = $"{(int)response.StatusCode} {response.ReasonPhrase} — {path}";
+            _resultJson = FormatJson(body);
+        }
+        catch (Exception ex)
+        {
+            _isError = true;
+            _message = "Không gọi được API. Kiểm tra API đang chạy và BaseAddress trong Program.cs.";
+            _resultJson = ex.ToString();
+        }
+        finally { _busy = false; }
+    }
+
+    private static string FormatJson(string body)
+    {
+        if (string.IsNullOrWhiteSpace(body)) return "(Response không có nội dung.)";
+        try { return JsonSerializer.Serialize(JsonDocument.Parse(body).RootElement, new JsonSerializerOptions { WriteIndented = true }); }
+        catch { return body; }
+    }
+
+    private static bool TryOptionalGuid(string value, out Guid? result)
+    {
+        result = null;
+        if (string.IsNullOrWhiteSpace(value)) return true;
+        if (!Guid.TryParse(value, out var parsed)) return false;
+        result = parsed;
+        return true;
+    }
+
+    private static string? NullIfEmpty(string value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    private void BaoLoi(string message) { _isError = true; _message = message; }
+    private void XoaKetQua() { _message = null; _resultJson = null; _isError = false; }
+}
