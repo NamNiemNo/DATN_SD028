@@ -1,0 +1,367 @@
+﻿@page "/degiay"
+@using DeGiayModel = Data.Models.DeGiay
+@using BlazorAdmin.IServices
+@using Microsoft.AspNetCore.Components.Forms
+@inject IDeGiayService DeGiayService
+@inject IJSRuntime JS
+
+<PageTitle>Quản lý đế giày</PageTitle>
+
+<div class="container py-4">
+    <h3 class="mb-4">Quản lý đế giày</h3>
+
+    @if (!string.IsNullOrWhiteSpace(thongBao))
+    {
+        <div class="alert @(laLoi ? "alert-danger" : "alert-success")">
+            @thongBao
+        </div>
+    }
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <strong>@(dangSua ? "Cập nhật đế giày" : "Thêm đế giày mới")</strong>
+        </div>
+        <div class="card-body">
+            <EditForm Model="@deGiayDangNhap" OnValidSubmit="@LuuDeGiay">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Tên đế giày</label>
+                        <InputText class="form-control"
+                                   @bind-Value="deGiayDangNhap.TenDeGiay" />
+                        <ValidationMessage For="@(() => deGiayDangNhap.TenDeGiay)" />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Trạng thái</label>
+                        <div class="form-check mt-2">
+                            <InputCheckbox class="form-check-input"
+                                           @bind-Value="deGiayDangNhap.TrangThai" />
+                            <label class="form-check-label">
+                                @(deGiayDangNhap.TrangThai ? "Đang hoạt động" : "Ngừng hoạt động")
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-12">
+                        <label class="form-label">Mô tả</label>
+                        <InputTextArea class="form-control"
+                                       @bind-Value="deGiayDangNhap.MoTa" />
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <button type="submit" class="btn btn-primary" disabled="@dangXuLy">
+                        @(dangXuLy ? "Đang xử lý..." : dangSua ? "Cập nhật" : "Thêm mới")
+                    </button>
+                    <button type="button" class="btn btn-secondary ms-2" @onclick="LamMoiForm">
+                        Làm mới
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+
+    @if (deGiayChiTiet != null)
+    {
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>Chi tiết đế giày</strong>
+                <button type="button" class="btn btn-sm btn-outline-secondary"
+                        @onclick="DongChiTiet">
+                    Đóng
+                </button>
+            </div>
+            <div class="card-body">
+                <p><strong>Mã đế giày:</strong> @deGiayChiTiet.DeGiayId</p>
+                <p><strong>Tên đế giày:</strong> @deGiayChiTiet.TenDeGiay</p>
+                <p><strong>Mô tả:</strong> @deGiayChiTiet.MoTa</p>
+                <p>
+                    <strong>Trạng thái:</strong>
+                    @(deGiayChiTiet.TrangThai ? "Đang hoạt động" : "Ngừng hoạt động")
+                </p>
+            </div>
+        </div>
+    }
+
+    <div class="card">
+        <div class="card-header">
+            <strong>Danh sách đế giày</strong>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <input class="form-control"
+                           placeholder="Nhập tên đế giày cần tìm..."
+                           @bind="tuKhoa" @bind:event="oninput" />
+                </div>
+                <div class="col-md-6 mt-2 mt-md-0 text-md-end">
+                    <span>Tổng số: @DanhSachHienThi.Count() đế giày</span>
+                </div>
+            </div>
+
+            @if (dangTai)
+            {
+                <p>Đang tải danh sách đế giày...</p>
+            }
+            else if (!DanhSachHienThi.Any())
+            {
+                <p class="text-muted">Không tìm thấy đế giày nào.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>STT</th>
+                                <th>Mã đế giày</th>
+                                <th>Tên đế giày</th>
+                                <th>Mô tả</th>
+                                <th>Trạng thái</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in DanhSachHienThi)
+                            {
+                                <tr @key="item.DeGiayId">
+                                    <td>@(DanhSachHienThi.ToList().IndexOf(item) + 1)</td>
+                                    <td>@item.DeGiayId</td>
+                                    <td>@item.TenDeGiay</td>
+                                    <td>@item.MoTa</td>
+                                    <td>
+                                        @if (item.TrangThai)
+                                        {
+                                            <span class="badge bg-success">Đang hoạt động</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">Ngừng hoạt động</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="d-flex flex-wrap gap-1">
+                                            <button type="button" class="btn btn-info btn-sm"
+                                                    @onclick="() => XemChiTiet(item.DeGiayId)">
+                                                Chi tiết
+                                            </button>
+                                            <button type="button" class="btn btn-warning btn-sm"
+                                                    @onclick="() => SuaDeGiay(item.DeGiayId)">
+                                                Sửa
+                                            </button>
+                                            <button type="button" class="btn btn-danger btn-sm"
+                                                    @onclick="() => XoaDeGiay(item.DeGiayId)">
+                                                Xóa
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<DeGiayModel> danhSachDeGiay = new();
+    private DeGiayModel deGiayDangNhap = TaoDeGiayMoi();
+    private DeGiayModel? deGiayChiTiet;
+
+    private string tuKhoa = string.Empty;
+    private string thongBao = string.Empty;
+
+    private bool dangTai = true;
+    private bool dangSua;
+    private bool dangXuLy;
+    private bool laLoi;
+
+    private IEnumerable<DeGiayModel> DanhSachHienThi =>
+        danhSachDeGiay.Where(x =>
+            string.IsNullOrWhiteSpace(tuKhoa) ||
+            (x.TenDeGiay?.Contains(
+                tuKhoa.Trim(), StringComparison.OrdinalIgnoreCase) ?? false));
+
+    private static DeGiayModel TaoDeGiayMoi() => new()
+    {
+        TenDeGiay = string.Empty,
+        MoTa = string.Empty,
+        TrangThai = true
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await TaiDanhSach();
+    }
+
+    private async Task TaiDanhSach()
+    {
+        dangTai = true;
+
+        try
+        {
+            danhSachDeGiay = await DeGiayService.GetAllAsync();
+        }
+        catch (Exception ex)
+        {
+            BaoLoi($"Không tải được danh sách đế giày: {ex.Message}");
+        }
+        finally
+        {
+            dangTai = false;
+        }
+    }
+
+    private async Task LuuDeGiay()
+    {
+        if (dangXuLy) return;
+
+        dangXuLy = true;
+        thongBao = string.Empty;
+
+        try
+        {
+            bool thanhCong;
+
+            if (dangSua)
+            {
+                thanhCong = await DeGiayService.UpdateAsync(
+                    deGiayDangNhap.DeGiayId, deGiayDangNhap);
+
+                if (!thanhCong)
+                {
+                    BaoLoi("Cập nhật thất bại hoặc không tìm thấy đế giày.");
+                    return;
+                }
+
+                BaoThanhCong("Cập nhật đế giày thành công.");
+            }
+            else
+            {
+                thanhCong = await DeGiayService.CreateAsync(deGiayDangNhap);
+
+                if (!thanhCong)
+                {
+                    BaoLoi("Thêm đế giày thất bại. Vui lòng kiểm tra dữ liệu.");
+                    return;
+                }
+
+                BaoThanhCong("Thêm đế giày thành công.");
+            }
+
+            LamMoiForm();
+            await TaiDanhSach();
+        }
+        catch (Exception ex)
+        {
+            BaoLoi($"Có lỗi khi lưu đế giày: {ex.Message}");
+        }
+        finally
+        {
+            dangXuLy = false;
+        }
+    }
+
+    private async Task SuaDeGiay(Guid id)
+    {
+        try
+        {
+            var item = await DeGiayService.GetByIdAsync(id);
+
+            if (item == null)
+            {
+                BaoLoi("Không tìm thấy đế giày cần sửa.");
+                return;
+            }
+
+            deGiayDangNhap = new DeGiayModel
+            {
+                DeGiayId = item.DeGiayId,
+                TenDeGiay = item.TenDeGiay,
+                MoTa = item.MoTa,
+                TrangThai = item.TrangThai
+            };
+
+            dangSua = true;
+            deGiayChiTiet = null;
+            thongBao = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            BaoLoi($"Không tải được thông tin đế giày: {ex.Message}");
+        }
+    }
+
+    private async Task XemChiTiet(Guid id)
+    {
+        try
+        {
+            deGiayChiTiet = await DeGiayService.GetByIdAsync(id);
+
+            if (deGiayChiTiet == null)
+                BaoLoi("Không tìm thấy thông tin đế giày.");
+        }
+        catch (Exception ex)
+        {
+            BaoLoi($"Không xem được chi tiết đế giày: {ex.Message}");
+        }
+    }
+
+    private async Task XoaDeGiay(Guid id)
+    {
+        bool xacNhan = await JS.InvokeAsync<bool>(
+            "confirm", "Bạn có chắc chắn muốn xóa đế giày này không?");
+
+        if (!xacNhan) return;
+
+        try
+        {
+            bool thanhCong = await DeGiayService.DeleteAsync(id);
+
+            if (!thanhCong)
+            {
+                BaoLoi("Xóa thất bại. Có thể đế giày đang được sử dụng.");
+                return;
+            }
+
+            if (deGiayChiTiet?.DeGiayId == id)
+                deGiayChiTiet = null;
+
+            BaoThanhCong("Xóa đế giày thành công.");
+            await TaiDanhSach();
+        }
+        catch (Exception ex)
+        {
+            BaoLoi($"Không xóa được đế giày: {ex.Message}");
+        }
+    }
+
+    private void LamMoiForm()
+    {
+        deGiayDangNhap = TaoDeGiayMoi();
+        dangSua = false;
+        thongBao = string.Empty;
+    }
+
+    private void DongChiTiet()
+    {
+        deGiayChiTiet = null;
+    }
+
+    private void BaoThanhCong(string noiDung)
+    {
+        thongBao = noiDung;
+        laLoi = false;
+    }
+
+    private void BaoLoi(string noiDung)
+    {
+        thongBao = noiDung;
+        laLoi = true;
+    }
+}

@@ -1,0 +1,381 @@
+﻿@page "/giayyeuthich"
+@using GiayYeuThichModel = API.Models.GiayYeuThich
+@using BlazorAdmin.IServices
+@using Microsoft.AspNetCore.Components.Forms
+@inject IGiayYeuThichService GiayYeuThichService
+@inject IJSRuntime JS
+
+<PageTitle>Quản lý giày yêu thích</PageTitle>
+
+<div class="container py-4">
+    <h3 class="mb-4">Quản lý giày yêu thích</h3>
+
+    @if (!string.IsNullOrWhiteSpace(thongBao))
+    {
+        <div class="alert @(laLoi ? "alert-danger" : "alert-success")">
+            @thongBao
+        </div>
+    }
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <strong>@(dangSua ? "Cập nhật giày yêu thích" : "Thêm giày yêu thích mới")</strong>
+        </div>
+        <div class="card-body">
+            <EditForm Model="@giayYeuThichDangNhap" OnValidSubmit="@LuuGiayYeuThich">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Mã giày (GUID)</label>
+                        <InputText class="form-control"
+                                   @bind-Value="giayIdNhap"
+                                   placeholder="Nhập mã giày" />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Mã khách hàng (GUID)</label>
+                        <InputText class="form-control"
+                                   @bind-Value="khachHangIdNhap"
+                                   placeholder="Nhập mã khách hàng" />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Ngày yêu thích</label>
+                        <InputDate class="form-control"
+                                   @bind-Value="giayYeuThichDangNhap.NgayYeuThich" />
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <button type="submit" class="btn btn-primary" disabled="@dangXuLy">
+                        @(dangXuLy ? "Đang xử lý..." : dangSua ? "Cập nhật" : "Thêm mới")
+                    </button>
+                    <button type="button" class="btn btn-secondary ms-2"
+                            @onclick="LamMoiForm">
+                        Làm mới
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+
+    @if (giayYeuThichChiTiet != null)
+    {
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>Chi tiết giày yêu thích</strong>
+                <button type="button" class="btn btn-sm btn-outline-secondary"
+                        @onclick="DongChiTiet">
+                    Đóng
+                </button>
+            </div>
+            <div class="card-body">
+                <p><strong>Mã yêu thích:</strong> @giayYeuThichChiTiet.Id</p>
+                <p><strong>Mã giày:</strong> @giayYeuThichChiTiet.GiayId</p>
+                <p><strong>Mã khách hàng:</strong> @giayYeuThichChiTiet.KhachHangId</p>
+                <p>
+                    <strong>Ngày yêu thích:</strong>
+                    @giayYeuThichChiTiet.NgayYeuThich.ToString("dd/MM/yyyy HH:mm")
+                </p>
+            </div>
+        </div>
+    }
+
+    <div class="card">
+        <div class="card-header">
+            <strong>Danh sách giày yêu thích</strong>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <input class="form-control"
+                           placeholder="Tìm theo mã giày hoặc mã khách hàng..."
+                           @bind="tuKhoa" @bind:event="oninput" />
+                </div>
+                <div class="col-md-6 mt-2 mt-md-0 text-md-end">
+                    <span>Tổng số: @DanhSachHienThi.Count() lượt yêu thích</span>
+                </div>
+            </div>
+
+            @if (dangTai)
+            {
+                <p>Đang tải danh sách giày yêu thích...</p>
+            }
+            else if (!DanhSachHienThi.Any())
+            {
+                <p class="text-muted">Không tìm thấy dữ liệu giày yêu thích.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>STT</th>
+                                <th>Mã yêu thích</th>
+                                <th>Mã giày</th>
+                                <th>Mã khách hàng</th>
+                                <th>Ngày yêu thích</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in DanhSachHienThi)
+                            {
+                                <tr @key="item.Id">
+                                    <td>@(DanhSachHienThi.ToList().IndexOf(item) + 1)</td>
+                                    <td>@item.Id</td>
+                                    <td>@item.GiayId</td>
+                                    <td>@item.KhachHangId</td>
+                                    <td>@item.NgayYeuThich.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td>
+                                        <div class="d-flex flex-wrap gap-1">
+                                            <button type="button" class="btn btn-info btn-sm"
+                                                    @onclick="() => XemChiTiet(item.Id)">
+                                                Chi tiết
+                                            </button>
+                                            <button type="button" class="btn btn-warning btn-sm"
+                                                    @onclick="() => SuaGiayYeuThich(item.Id)">
+                                                Sửa
+                                            </button>
+                                            <button type="button" class="btn btn-danger btn-sm"
+                                                    @onclick="() => XoaGiayYeuThich(item.Id)">
+                                                Xóa
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<GiayYeuThichModel> danhSachGiayYeuThich = new();
+    private GiayYeuThichModel giayYeuThichDangNhap = TaoGiayYeuThichMoi();
+    private GiayYeuThichModel? giayYeuThichChiTiet;
+
+    private string giayIdNhap = string.Empty;
+    private string khachHangIdNhap = string.Empty;
+    private string tuKhoa = string.Empty;
+    private string thongBao = string.Empty;
+
+    private bool dangTai = true;
+    private bool dangSua;
+    private bool dangXuLy;
+    private bool laLoi;
+
+    private IEnumerable<GiayYeuThichModel> DanhSachHienThi =>
+        danhSachGiayYeuThich.Where(x =>
+            string.IsNullOrWhiteSpace(tuKhoa) ||
+            x.GiayId.ToString().Contains(
+                tuKhoa.Trim(), StringComparison.OrdinalIgnoreCase) ||
+            x.KhachHangId.ToString().Contains(
+                tuKhoa.Trim(), StringComparison.OrdinalIgnoreCase) ||
+            x.Id.ToString().Contains(
+                tuKhoa.Trim(), StringComparison.OrdinalIgnoreCase));
+
+    private static GiayYeuThichModel TaoGiayYeuThichMoi() => new()
+    {
+        Id = Guid.NewGuid(),
+        NgayYeuThich = DateTime.Now
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await TaiDanhSach();
+    }
+
+    private async Task TaiDanhSach()
+    {
+        dangTai = true;
+
+        try
+        {
+            danhSachGiayYeuThich = await GiayYeuThichService.GetAllAsync();
+        }
+        catch (Exception ex)
+        {
+            BaoLoi($"Không tải được danh sách giày yêu thích: {ex.Message}");
+        }
+        finally
+        {
+            dangTai = false;
+        }
+    }
+
+    private async Task LuuGiayYeuThich()
+    {
+        if (dangXuLy) return;
+
+        if (!Guid.TryParse(giayIdNhap, out Guid giayId))
+        {
+            BaoLoi("Mã giày không đúng định dạng GUID.");
+            return;
+        }
+
+        if (!Guid.TryParse(khachHangIdNhap, out Guid khachHangId))
+        {
+            BaoLoi("Mã khách hàng không đúng định dạng GUID.");
+            return;
+        }
+
+        dangXuLy = true;
+        thongBao = string.Empty;
+
+        try
+        {
+            giayYeuThichDangNhap.GiayId = giayId;
+            giayYeuThichDangNhap.KhachHangId = khachHangId;
+
+            bool thanhCong;
+
+            if (dangSua)
+            {
+                thanhCong = await GiayYeuThichService.UpdateAsync(
+                    giayYeuThichDangNhap.Id, giayYeuThichDangNhap);
+
+                if (!thanhCong)
+                {
+                    BaoLoi("Cập nhật thất bại hoặc không tìm thấy dữ liệu.");
+                    return;
+                }
+
+                BaoThanhCong("Cập nhật giày yêu thích thành công.");
+            }
+            else
+            {
+                thanhCong = await GiayYeuThichService.CreateAsync(
+                    giayYeuThichDangNhap);
+
+                if (!thanhCong)
+                {
+                    BaoLoi("Thêm giày yêu thích thất bại. Vui lòng kiểm tra dữ liệu.");
+                    return;
+                }
+
+                BaoThanhCong("Thêm giày yêu thích thành công.");
+            }
+
+            LamMoiForm();
+            await TaiDanhSach();
+        }
+        catch (Exception ex)
+        {
+            BaoLoi($"Có lỗi khi lưu dữ liệu: {ex.Message}");
+        }
+        finally
+        {
+            dangXuLy = false;
+        }
+    }
+
+    private async Task SuaGiayYeuThich(Guid id)
+    {
+        try
+        {
+            var item = await GiayYeuThichService.GetByIdAsync(id);
+
+            if (item == null)
+            {
+                BaoLoi("Không tìm thấy dữ liệu cần sửa.");
+                return;
+            }
+
+            giayYeuThichDangNhap = new GiayYeuThichModel
+            {
+                Id = item.Id,
+                GiayId = item.GiayId,
+                KhachHangId = item.KhachHangId,
+                NgayYeuThich = item.NgayYeuThich
+            };
+
+            giayIdNhap = item.GiayId.ToString();
+            khachHangIdNhap = item.KhachHangId.ToString();
+
+            dangSua = true;
+            giayYeuThichChiTiet = null;
+            thongBao = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            BaoLoi($"Không tải được thông tin giày yêu thích: {ex.Message}");
+        }
+    }
+
+    private async Task XemChiTiet(Guid id)
+    {
+        try
+        {
+            giayYeuThichChiTiet = await GiayYeuThichService.GetByIdAsync(id);
+
+            if (giayYeuThichChiTiet == null)
+                BaoLoi("Không tìm thấy thông tin giày yêu thích.");
+        }
+        catch (Exception ex)
+        {
+            BaoLoi($"Không xem được chi tiết: {ex.Message}");
+        }
+    }
+
+    private async Task XoaGiayYeuThich(Guid id)
+    {
+        bool xacNhan = await JS.InvokeAsync<bool>(
+            "confirm", "Bạn có chắc chắn muốn xóa dữ liệu này không?");
+
+        if (!xacNhan) return;
+
+        try
+        {
+            bool thanhCong = await GiayYeuThichService.DeleteAsync(id);
+
+            if (!thanhCong)
+            {
+                BaoLoi("Xóa dữ liệu thất bại.");
+                return;
+            }
+
+            if (giayYeuThichChiTiet?.Id == id)
+                giayYeuThichChiTiet = null;
+
+            BaoThanhCong("Xóa giày yêu thích thành công.");
+            await TaiDanhSach();
+        }
+        catch (Exception ex)
+        {
+            BaoLoi($"Không xóa được dữ liệu: {ex.Message}");
+        }
+    }
+
+    private void LamMoiForm()
+    {
+        giayYeuThichDangNhap = TaoGiayYeuThichMoi();
+        giayIdNhap = string.Empty;
+        khachHangIdNhap = string.Empty;
+        dangSua = false;
+        thongBao = string.Empty;
+    }
+
+    private void DongChiTiet()
+    {
+        giayYeuThichChiTiet = null;
+    }
+
+    private void BaoThanhCong(string noiDung)
+    {
+        thongBao = noiDung;
+        laLoi = false;
+    }
+
+    private void BaoLoi(string noiDung)
+    {
+        thongBao = noiDung;
+        laLoi = true;
+    }
+}
