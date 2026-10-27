@@ -15,7 +15,7 @@ namespace Data.Models
         [Required]
         [RegularExpression(@"^[a-zA-Z0-9\s]+$", ErrorMessage = "Tên đăng nhập không hợp lệ")]
         public string Username { get; set; }
-
+        
         [Required]
         public string Password { get; set; }
 
