@@ -1,33 +1,148 @@
-﻿using BlazorAdmin.Components;
-using BlazorAdmin.Service.IService;
+﻿using API.Models.DTO;
+using BlazorAdmin.Components;
 using BlazorAdmin.Service;
+using BlazorAdmin.Service.IService;
+using Blazored.LocalStorage;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Components.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Thêm dịch vụ Razor Components (Blazor)
+builder.Services.AddBlazoredLocalStorage();
+builder.Services.AddBlazorBootstrap();
+
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-// 2. Thêm Controllers và cấu hình JSON (chống lỗi vòng lặp tham chiếu)
-builder.Services.AddControllers()
+builder.Services
+    .AddControllers()
     .AddJsonOptions(options =>
     {
-        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.ReferenceHandler =
+            System.Text.Json.Serialization
+                .ReferenceHandler.IgnoreCycles;
+
+        options.JsonSerializerOptions
+                .DefaultIgnoreCondition =
+            System.Text.Json.Serialization
+                .JsonIgnoreCondition.WhenWritingNull;
     });
 
-// 3. Cấu hình HttpClient cơ bản để gọi API (Thay đổi BaseAddress thành URL của API của bạn nếu cần)
-builder.Services.AddScoped(sp => new HttpClient
+builder.Services.AddHttpContextAccessor();
+
+builder.Services
+    .AddAuthentication(
+        CookieAuthenticationDefaults
+            .AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/";
+        options.AccessDeniedPath = "/";
+        options.ExpireTimeSpan =
+            TimeSpan.FromMinutes(30);
+        options.SlidingExpiration = true;
+    });
+
+builder.Services.AddAuthorization(options =>
 {
-    BaseAddress = new Uri("https://localhost:7246/")
+    options.AddPolicy(
+        "RequireAdminRole",
+        policy => policy.RequireRole("Admin"));
 });
-// khai báo services
-builder.Services.AddScoped<INhanVienService, NhanVienService>();
+
+builder.Services.AddAuthorizationCore();
+
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+const string apiUrl =
+    "https://localhost:7246/";
+
+builder.Services
+    .AddScoped<ApiAuthorizationHandler>();
+
+builder.Services.AddScoped<HttpClient>(
+    serviceProvider =>
+    {
+        var authorizationHandler =
+            serviceProvider
+                .GetRequiredService<
+                    ApiAuthorizationHandler>();
+
+        authorizationHandler.InnerHandler =
+            new HttpClientHandler();
+
+        return new HttpClient(
+            authorizationHandler)
+        {
+            BaseAddress = new Uri(apiUrl)
+        };
+    });
+
+
+
+builder.Services.AddScoped<
+    INhanVienService,
+    NhanVienService>();
+
+
+
+builder.Services.AddScoped<
+    IDiaChiKhachHangService,
+    DiaChiKhachHangService>();
+
+
+
+
+
+builder.Services.AddScoped<
+    ITaiKhoanService,
+    TaiKhoanService>();
+
+
+
+builder.Services.AddScoped<
+    IKhachHangService,
+    KhachHangService>();
+
+
+
+builder.Services.AddScoped<
+    IThongBaoService,
+    ThongBaoService>();
+
+builder.WebHost.UseWebRoot("wwwroot");
+
+builder.Services
+    .AddServerSideBlazor()
+    .AddCircuitOptions(options =>
+    {
+        options.DetailedErrors = true;
+    });
+
+builder.Services.AddScoped<
+    CustomAuthenticationStateProvider>();
+
+builder.Services.AddScoped<
+    AuthenticationStateProvider>(
+    serviceProvider =>
+        serviceProvider.GetRequiredService<
+            CustomAuthenticationStateProvider>());
+
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize =
+        52_428_800;
+});
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
+    app.UseExceptionHandler(
+        "/Error",
+        createScopeForErrors: true);
+
     app.UseHsts();
 }
 
@@ -35,12 +150,12 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.UseAntiforgery();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
-
-// Ánh xạ các Controller API nếu bạn viết API chung trong dự án này
-app.MapControllers();
 
 app.Run();

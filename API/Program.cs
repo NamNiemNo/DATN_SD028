@@ -30,12 +30,12 @@ builder.Services.AddDbContext<DbContextApp>(
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
     });
+
 
 // =====================================================
 // ĐĂNG KÝ REPOSITORY
@@ -53,6 +53,9 @@ builder.Services.AddScoped<
 builder.Services.AddScoped<
     IChucVuRepository,
     ChucVuRepository>();
+builder.Services.AddScoped<
+    IThongBaoRepository,
+    ThongBaoRepository>();
 builder.Services.AddScoped<
     IKhachHangRepository,
     KhachHangRepository>();
