@@ -49,8 +49,4 @@
     <None Include="wwwroot\Uploads\Images\ea730c58-8b26-44db-a5c6-42afd2f01b28.jpg" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Services\" />
-  </ItemGroup>
-
 </Project>

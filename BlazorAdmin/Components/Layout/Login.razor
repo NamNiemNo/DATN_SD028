@@ -1,0 +1,947 @@
+﻿@page "/"
+@using System.ComponentModel.DataAnnotations
+@using API.Models.DTO
+@using BlazorAdmin.Service.IService
+@using Microsoft.AspNetCore.Components.Authorization
+
+@inject ITaiKhoanService taiKhoanService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@inject CustomAuthenticationStateProvider AuthProvider
+
+<link href="css/Login.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+      rel="stylesheet" />
+
+<PageTitle>Đăng nhập hệ thống</PageTitle>
+
+<div class="login-page">
+
+    <div class="login-decoration decoration-one"></div>
+    <div class="login-decoration decoration-two"></div>
+    <div class="login-decoration decoration-three"></div>
+
+    <div class="login-wrapper">
+
+        <!-- CỘT GIỚI THIỆU -->
+        <section class="login-introduction">
+            <div class="introduction-content">
+
+                <!-- LOGO THƯƠNG HIỆU -->
+                <div class="login-brand">
+                    <div class="brand-logo">
+                        <img src="img/Logo.jpg"
+                             alt="Logo SneakerHub Store"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+
+                        <span class="logo-fallback">
+                            <i class="bi bi-bag-check-fill"></i>
+                        </span>
+                    </div>
+
+                    <div class="brand-information">
+                        <strong>SneakerHub Store</strong>
+                        <small>Admin Management</small>
+                    </div>
+                </div>
+
+                <div class="introduction-main">
+                    <span class="welcome-label">
+                        HỆ THỐNG QUẢN LÝ
+                    </span>
+
+                    <h1>
+                        Quản lý cửa hàng
+                        <span>đơn giản hơn.</span>
+                    </h1>
+
+                    <p>
+                        Theo dõi sản phẩm, đơn hàng, khách hàng và hoạt động
+                        bán hàng trên cùng một hệ thống.
+                    </p>
+
+                    <div class="introduction-features">
+                        <div class="feature-item">
+                            <span>
+                                <i class="bi bi-check2"></i>
+                            </span>
+
+                            Quản lý dữ liệu tập trung
+                        </div>
+
+                        <div class="feature-item">
+                            <span>
+                                <i class="bi bi-check2"></i>
+                            </span>
+
+                            Giao diện trực quan, dễ sử dụng
+                        </div>
+
+                        <div class="feature-item">
+                            <span>
+                                <i class="bi bi-check2"></i>
+                            </span>
+
+                            Phân quyền Admin và Nhân viên
+                        </div>
+                    </div>
+                </div>
+
+                <div class="introduction-footer">
+                    © @DateTime.Now.Year SneakerHub Store
+                </div>
+            </div>
+        </section>
+
+        <!-- FORM ĐĂNG NHẬP -->
+        <section class="login-form-section">
+            <div class="login-form-container">
+
+                <!-- LOGO TRÊN ĐIỆN THOẠI -->
+                <div class="mobile-brand">
+                    <div class="brand-logo mobile-logo">
+                        <img src="img/Logo.jpg"
+                             alt="Logo SneakerHub Store"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+
+                        <span class="logo-fallback">
+                            <i class="bi bi-bag-check-fill"></i>
+                        </span>
+                    </div>
+
+                    <div class="mobile-brand-information">
+                        <strong>SneakerHub Store</strong>
+                        <small>Admin Management</small>
+                    </div>
+                </div>
+
+                <div class="form-heading">
+                    <h2>Chào mừng trở lại</h2>
+                    <p>Đăng nhập để tiếp tục sử dụng hệ thống.</p>
+                </div>
+
+                <EditForm Model="Input"
+                          OnValidSubmit="LoginUserAsync"
+                          FormName="login">
+
+                    <DataAnnotationsValidator />
+
+                    @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+                    {
+                        <div class="login-alert">
+                            <i class="bi bi-exclamation-circle-fill"></i>
+
+                            <span>@ErrorMessage</span>
+
+                            <button type="button"
+                                    title="Đóng thông báo"
+                                    @onclick="CloseErrorMessage">
+                                <i class="bi bi-x"></i>
+                            </button>
+                        </div>
+                    }
+
+                    <!-- TÊN TÀI KHOẢN -->
+                    <div class="login-field">
+                        <label for="username">
+                            Tên tài khoản
+                        </label>
+
+                        <div class="login-input-wrapper">
+                            <i class="bi bi-person input-icon"></i>
+
+                            <InputText id="username"
+                                       class="login-input"
+                                       @bind-Value="Input.UserName"
+                                       autocomplete="username"
+                                       placeholder="Nhập tên tài khoản..." />
+                        </div>
+
+                        <ValidationMessage For="@(() => Input.UserName)"
+                                           class="validation-message" />
+                    </div>
+
+                    <!-- MẬT KHẨU -->
+                    <div class="login-field">
+                        <label for="password">
+                            Mật khẩu
+                        </label>
+
+                        <div class="login-input-wrapper">
+                            <i class="bi bi-lock input-icon"></i>
+
+                            <InputText id="password"
+                                       type="@PasswordInputType"
+                                       class="login-input password-input"
+                                       @bind-Value="Input.Password"
+                                       autocomplete="current-password"
+                                       placeholder="Nhập mật khẩu..." />
+
+                            <button type="button"
+                                    class="password-button"
+                                    title="Hiện hoặc ẩn mật khẩu"
+                                    @onclick="TogglePasswordVisibility">
+
+                                <i class="bi @(IsPasswordVisible
+                                    ? "bi-eye-slash"
+                                    : "bi-eye")">
+                                </i>
+                            </button>
+                        </div>
+
+                        <ValidationMessage For="@(() => Input.Password)"
+                                           class="validation-message" />
+                    </div>
+
+                    <div class="login-options">
+                        <label class="remember-checkbox">
+                            <InputCheckbox @bind-Value="Input.RememberMe" />
+                            <span>Ghi nhớ đăng nhập</span>
+                        </label>
+                    </div>
+
+                    <button type="submit"
+                            class="login-button"
+                            disabled="@isSubmitting">
+
+                        @if (isSubmitting)
+                        {
+                            <span class="spinner-border spinner-border-sm"></span>
+                            <span>Đang đăng nhập...</span>
+                        }
+                        else
+                        {
+                            <span>Đăng nhập</span>
+                            <i class="bi bi-arrow-right"></i>
+                        }
+                    </button>
+                </EditForm>
+
+                <div class="security-note">
+                    <i class="bi bi-shield-lock"></i>
+                    <span>Thông tin đăng nhập được bảo vệ an toàn.</span>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = new();
+
+    private string ErrorMessage { get; set; } = string.Empty;
+
+    private bool IsPasswordVisible { get; set; }
+
+    private bool isSubmitting;
+
+    private string PasswordInputType =>
+        IsPasswordVisible ? "text" : "password";
+
+    private void TogglePasswordVisibility()
+    {
+        IsPasswordVisible = !IsPasswordVisible;
+    }
+
+    private void CloseErrorMessage()
+    {
+        ErrorMessage = string.Empty;
+    }
+
+    private async Task LoginUserAsync()
+    {
+        if (isSubmitting)
+        {
+            return;
+        }
+
+        ErrorMessage = string.Empty;
+        isSubmitting = true;
+
+        try
+        {
+            Input.UserName =
+                (Input.UserName ?? string.Empty).Trim();
+
+            var response =
+                await taiKhoanService.GetByIdChucVuAsync(
+                    Input.UserName,
+                    Input.Password);
+
+            if (!response.IsSuccess)
+            {
+                ErrorMessage =
+                    string.IsNullOrWhiteSpace(response.Message)
+                        ? "Tên tài khoản hoặc mật khẩu không chính xác."
+                        : response.Message;
+
+                return;
+            }
+
+            var role = response.Role?.Trim();
+
+            if (string.IsNullOrWhiteSpace(role))
+            {
+                ErrorMessage =
+                    "Tài khoản chưa được phân quyền.";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(response.Token))
+            {
+                ErrorMessage =
+                    "API không trả về token đăng nhập.";
+                return;
+            }
+
+            /*
+             * TaiKhoanService đã lưu authToken.
+             * Cập nhật ngay trạng thái xác thực trong Blazor.
+             */
+            AuthProvider.MarkUserAsAuthenticated(
+                response.Username,
+                role);
+
+            await JS.InvokeVoidAsync(
+                "localStorage.setItem",
+                "currentId",
+                response.Id.ToString());
+
+            await JS.InvokeVoidAsync(
+                "localStorage.setItem",
+                "currentRole",
+                role);
+
+            await JS.InvokeVoidAsync(
+                "localStorage.setItem",
+                "currentUserName",
+                response.Username);
+
+            if (string.Equals(
+                    role,
+                    "Admin",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                /*
+                 * Không sử dụng forceLoad: true.
+                 */
+                Navigation.NavigateTo(
+                    "/thongke",
+                    replace: true);
+
+                return;
+            }
+
+            if (string.Equals(
+                    role,
+                    "NhanVien",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                Navigation.NavigateTo(
+                    "/BanHang",
+                    replace: true);
+
+                return;
+            }
+
+            ErrorMessage =
+                $"Quyền '{role}' không được phép truy cập trang quản trị.";
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage =
+                $"Đăng nhập thất bại: {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private sealed class InputModel
+    {
+        [Required(ErrorMessage = "Vui lòng nhập tên tài khoản")]
+        public string UserName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Vui lòng nhập mật khẩu")]
+        public string Password { get; set; } = string.Empty;
+
+        public bool RememberMe { get; set; }
+    }
+}
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    .login-page {
+        position: relative;
+        min-height: 100vh;
+        padding: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        background: #f5f7fb;
+        font-family: "Segoe UI", sans-serif;
+    }
+
+    .login-wrapper {
+        position: relative;
+        z-index: 2;
+        width: min(1080px, 100%);
+        min-height: 650px;
+        display: grid;
+        grid-template-columns: 1.05fr .95fr;
+        overflow: hidden;
+        border: 1px solid rgba(226, 232, 240, .8);
+        border-radius: 28px;
+        background: #ffffff;
+        box-shadow: 0 35px 90px rgba(15, 23, 42, .14);
+    }
+
+    /* ============================================================= */
+    /* CỘT GIỚI THIỆU */
+    /* ============================================================= */
+
+    .login-introduction {
+        position: relative;
+        padding: 48px;
+        overflow: hidden;
+        background: radial-gradient( circle at 10% 10%, rgba(249, 115, 22, .34), transparent 27% ), radial-gradient( circle at 90% 90%, rgba(234, 88, 12, .22), transparent 28% ), linear-gradient(145deg, #111827, #1f2937);
+        color: #ffffff;
+    }
+
+        .login-introduction::before {
+            content: "";
+            position: absolute;
+            width: 280px;
+            height: 280px;
+            top: -150px;
+            right: -130px;
+            border: 1px solid rgba(255, 255, 255, .1);
+            border-radius: 50%;
+        }
+
+        .login-introduction::after {
+            content: "";
+            position: absolute;
+            width: 350px;
+            height: 350px;
+            bottom: -220px;
+            left: -170px;
+            border: 1px solid rgba(255, 255, 255, .08);
+            border-radius: 50%;
+        }
+
+    .introduction-content {
+        position: relative;
+        z-index: 2;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* ============================================================= */
+    /* LOGO */
+    /* ============================================================= */
+
+    .login-brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .brand-logo {
+        position: relative;
+        width: 58px;
+        height: 58px;
+        flex: 0 0 58px;
+        padding: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, .35);
+        border-radius: 17px;
+        background: #ffffff;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, .18), inset 0 0 0 1px rgba(15, 23, 42, .04);
+    }
+
+        .brand-logo img {
+            width: 100%;
+            height: 100%;
+            display: block;
+            border-radius: 12px;
+            object-fit: contain;
+            object-position: center;
+        }
+
+    .logo-fallback {
+        position: absolute;
+        inset: 4px;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #fb923c, #ea580c);
+        color: #ffffff;
+        font-size: 23px;
+    }
+
+    .brand-information {
+        min-width: 0;
+    }
+
+        .brand-information strong,
+        .brand-information small {
+            display: block;
+        }
+
+        .brand-information strong {
+            color: #ffffff;
+            font-size: 17px;
+            font-weight: 800;
+            line-height: 1.3;
+        }
+
+        .brand-information small {
+            margin-top: 3px;
+            color: #94a3b8;
+            font-size: 11px;
+            letter-spacing: .3px;
+        }
+
+    /* ============================================================= */
+    /* NỘI DUNG GIỚI THIỆU */
+    /* ============================================================= */
+
+    .introduction-main {
+        margin: auto 0;
+    }
+
+    .welcome-label {
+        display: inline-block;
+        margin-bottom: 17px;
+        color: #fb923c;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 2px;
+    }
+
+    .introduction-main h1 {
+        max-width: 430px;
+        margin: 0 0 18px;
+        font-size: clamp(34px, 4vw, 51px);
+        line-height: 1.12;
+        font-weight: 850;
+    }
+
+        .introduction-main h1 span {
+            display: block;
+            color: #fb923c;
+        }
+
+    .introduction-main > p {
+        max-width: 440px;
+        margin: 0;
+        color: #cbd5e1;
+        font-size: 14px;
+        line-height: 1.75;
+    }
+
+    .introduction-features {
+        margin-top: 30px;
+        display: flex;
+        flex-direction: column;
+        gap: 13px;
+    }
+
+    .feature-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #e2e8f0;
+        font-size: 13px;
+    }
+
+        .feature-item > span {
+            width: 25px;
+            height: 25px;
+            flex: 0 0 25px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background: rgba(249, 115, 22, .18);
+            color: #fb923c;
+            font-weight: 800;
+        }
+
+    .introduction-footer {
+        color: #64748b;
+        font-size: 11px;
+    }
+
+    /* ============================================================= */
+    /* FORM ĐĂNG NHẬP */
+    /* ============================================================= */
+
+    .login-form-section {
+        padding: 55px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .login-form-container {
+        width: 100%;
+        max-width: 390px;
+    }
+
+    .mobile-brand {
+        display: none;
+    }
+
+    .form-heading {
+        margin-bottom: 31px;
+    }
+
+        .form-heading h2 {
+            margin: 0 0 8px;
+            color: #111827;
+            font-size: 28px;
+            font-weight: 850;
+        }
+
+        .form-heading p {
+            margin: 0;
+            color: #64748b;
+            font-size: 13px;
+        }
+
+    /* ============================================================= */
+    /* THÔNG BÁO LỖI */
+    /* ============================================================= */
+
+    .login-alert {
+        margin-bottom: 20px;
+        padding: 12px 13px;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        border: 1px solid #fecaca;
+        border-radius: 11px;
+        background: #fef2f2;
+        color: #b91c1c;
+        font-size: 13px;
+    }
+
+        .login-alert span {
+            flex: 1;
+        }
+
+        .login-alert button {
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 0;
+            border-radius: 8px;
+            background: transparent;
+            color: inherit;
+            font-size: 19px;
+            cursor: pointer;
+        }
+
+            .login-alert button:hover {
+                background: #fee2e2;
+            }
+
+    /* ============================================================= */
+    /* Ô NHẬP LIỆU */
+    /* ============================================================= */
+
+    .login-field {
+        margin-bottom: 19px;
+    }
+
+        .login-field > label {
+            display: block;
+            margin-bottom: 8px;
+            color: #334155;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+    .login-input-wrapper {
+        position: relative;
+    }
+
+    .input-icon {
+        position: absolute;
+        top: 50%;
+        left: 14px;
+        z-index: 2;
+        transform: translateY(-50%);
+        color: #94a3b8;
+        font-size: 17px;
+        pointer-events: none;
+    }
+
+    .login-input {
+        width: 100%;
+        min-height: 49px;
+        padding: 10px 14px 10px 43px;
+        border: 1px solid #dce1e8;
+        border-radius: 12px;
+        background: #ffffff;
+        color: #111827;
+        font-size: 14px;
+        outline: none;
+        transition: .2s ease;
+    }
+
+        .login-input::placeholder {
+            color: #a8b0bd;
+        }
+
+    .password-input {
+        padding-right: 48px;
+    }
+
+    .login-input:focus {
+        border-color: #f97316;
+        box-shadow: 0 0 0 4px rgba(249, 115, 22, .11);
+    }
+
+    .password-button {
+        position: absolute;
+        top: 50%;
+        right: 7px;
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transform: translateY(-50%);
+        border: 0;
+        border-radius: 9px;
+        background: transparent;
+        color: #64748b;
+        font-size: 17px;
+        cursor: pointer;
+    }
+
+        .password-button:hover {
+            background: #f8fafc;
+            color: #f97316;
+        }
+
+    .validation-message {
+        display: block;
+        margin-top: 6px;
+        color: #dc2626;
+        font-size: 12px;
+    }
+
+    /* ============================================================= */
+    /* TÙY CHỌN ĐĂNG NHẬP */
+    /* ============================================================= */
+
+    .login-options {
+        margin: 3px 0 23px;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .remember-checkbox {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #64748b;
+        font-size: 12px;
+        cursor: pointer;
+    }
+
+        .remember-checkbox input {
+            width: 16px;
+            height: 16px;
+            accent-color: #f97316;
+            cursor: pointer;
+        }
+
+    /* ============================================================= */
+    /* NÚT ĐĂNG NHẬP */
+    /* ============================================================= */
+
+    .login-button {
+        width: 100%;
+        min-height: 50px;
+        padding: 0 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 11px;
+        border: 0;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #f97316, #ea580c);
+        color: #ffffff;
+        font-size: 14px;
+        font-weight: 750;
+        box-shadow: 0 12px 25px rgba(234, 88, 12, .22);
+        cursor: pointer;
+        transition: .2s ease;
+    }
+
+        .login-button:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 15px 30px rgba(234, 88, 12, .3);
+        }
+
+        .login-button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .login-button:disabled {
+            cursor: not-allowed;
+            opacity: .7;
+        }
+
+    .security-note {
+        margin-top: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        color: #94a3b8;
+        font-size: 11px;
+    }
+
+        .security-note i {
+            color: #22c55e;
+        }
+
+    /* ============================================================= */
+    /* TRANG TRÍ NỀN */
+    /* ============================================================= */
+
+    .login-decoration {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(2px);
+    }
+
+    .decoration-one {
+        width: 260px;
+        height: 260px;
+        top: -110px;
+        left: -90px;
+        background: rgba(249, 115, 22, .12);
+    }
+
+    .decoration-two {
+        width: 340px;
+        height: 340px;
+        right: -180px;
+        bottom: -160px;
+        background: rgba(59, 130, 246, .08);
+    }
+
+    .decoration-three {
+        width: 170px;
+        height: 170px;
+        top: 12%;
+        right: 10%;
+        background: rgba(249, 115, 22, .06);
+    }
+
+    /* ============================================================= */
+    /* RESPONSIVE TABLET */
+    /* ============================================================= */
+
+    @@media (max-width: 900px) {
+        .login-wrapper {
+            max-width: 520px;
+            min-height: auto;
+            grid-template-columns: 1fr;
+        }
+
+        .login-introduction {
+            display: none;
+        }
+
+        .login-form-section {
+            padding: 50px;
+        }
+
+        .mobile-brand {
+            margin-bottom: 35px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+            .mobile-brand .brand-logo {
+                width: 48px;
+                height: 48px;
+                flex-basis: 48px;
+                border-color: #e2e8f0;
+                border-radius: 14px;
+                box-shadow: 0 8px 20px rgba(15, 23, 42, .1);
+            }
+
+                .mobile-brand .brand-logo img {
+                    border-radius: 9px;
+                }
+
+        .mobile-brand-information strong,
+        .mobile-brand-information small {
+            display: block;
+        }
+
+        .mobile-brand-information strong {
+            color: #111827;
+            font-size: 16px;
+            font-weight: 800;
+        }
+
+        .mobile-brand-information small {
+            margin-top: 3px;
+            color: #94a3b8;
+            font-size: 10px;
+        }
+    }
+
+    /* ============================================================= */
+    /* RESPONSIVE ĐIỆN THOẠI */
+    /* ============================================================= */
+
+    @@media (max-width: 550px) {
+        .login-page {
+            min-height: 100svh;
+            padding: 13px;
+        }
+
+        .login-wrapper {
+            border-radius: 20px;
+        }
+
+        .login-form-section {
+            padding: 32px 22px;
+        }
+
+        .mobile-brand {
+            margin-bottom: 30px;
+        }
+
+        .form-heading h2 {
+            font-size: 24px;
+        }
+    }
+</style>
