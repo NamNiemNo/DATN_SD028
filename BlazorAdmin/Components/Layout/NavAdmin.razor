@@ -26,7 +26,17 @@
         <div class="menu-section-title">Quản lý</div>
 
       
+        <button type="button"
+                class="menu-entry menu-group-button @(productOpen ? "group-open" : "")"
+                @onclick="ToggleProduct">
+            <span class="menu-icon">
+                <i class="bi bi-box-seam-fill"></i>
+            </span>
 
+            <span>Quản lý sản phẩm</span>
+
+            <i class="bi bi-chevron-down group-arrow"></i>
+        </button>
         @if (productOpen)
         {
             <div class="submenu-container">

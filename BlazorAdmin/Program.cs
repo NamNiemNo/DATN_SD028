@@ -1,7 +1,9 @@
 ﻿using API.Models.DTO;
 using BlazorAdmin.Components;
+using BlazorAdmin.IServices;
 using BlazorAdmin.Service;
 using BlazorAdmin.Service.IService;
+using BlazorAdmin.Services;
 using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -110,6 +112,11 @@ builder.Services.AddScoped<
 builder.Services.AddScoped<
     IThongBaoService,
     ThongBaoService>();
+
+builder.Services.AddScoped<ITheLoaiGiayService, TheLoaiGiayService>();
+builder.Services.AddScoped<IThuongHieuService, ThuongHieuService>();
+builder.Services.AddScoped<IGiayYeuThichService, GiayYeuThichService>();
+builder.Services.AddScoped<IDeGiayService, DeGiayService>();
 
 builder.WebHost.UseWebRoot("wwwroot");
 

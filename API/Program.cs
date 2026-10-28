@@ -59,6 +59,18 @@ builder.Services.AddScoped<
 builder.Services.AddScoped<
     IKhachHangRepository,
     KhachHangRepository>();
+builder.Services.AddScoped<
+    IDeGiayRepository,
+    DeGiayRepository>();
+builder.Services.AddScoped<
+    IGiayYeuThichRepository,
+    GiayYeuThichRepository>();
+builder.Services.AddScoped<
+    IThuongHieuRepository,
+    ThuongHieuRepository>();
+builder.Services.AddScoped<
+    ITheLoaiGiayRepository,
+    TheLoaiGiayRepository>();
 
 var app = builder.Build();
 
