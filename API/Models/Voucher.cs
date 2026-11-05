@@ -32,16 +32,17 @@ namespace Data.Models
 
         public bool TrangThai { get; set; }
 
+        [Range(1, int.MaxValue, ErrorMessage = "Tổng lượt sử dụng phải lớn hơn 0.")]
         public int SoLuong { get; set; }
-		public virtual ICollection<KhachHangVoucher> KhachHangVouchers { get; set; } = new List<KhachHangVoucher>();
+        public virtual ICollection<KhachHangVoucher> KhachHangVouchers { get; set; } = new List<KhachHangVoucher>();
 
 
 
 
-		public void Validate()
+        public void Validate()
         {
-            if (NgayBatDau.Date < DateTime.Today)
-                throw new Exception("Ngày bắt đầu không hợp lệ.");
+            if (NgayBatDau < DateTime.Now)
+                throw new Exception("Thời điểm bắt đầu không được ở trong quá khứ.");
             if (NgayKetThuc <= NgayBatDau)
                 throw new Exception("Ngày kết thúc phải sau ngày bắt đầu.");
         }
